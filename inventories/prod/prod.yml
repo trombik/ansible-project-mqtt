@@ -1,0 +1,15 @@
+---
+all:
+  hosts:
+    mqtt1.i.trombik.org:
+      ansible_host: mqtt1.i.trombik.org
+  children:
+    mqtt:
+      hosts:
+        mqtt1.i.trombik.org:
+    prod-credentials:
+      children:
+        mqtt:
+    prod:
+      children:
+        mqtt:

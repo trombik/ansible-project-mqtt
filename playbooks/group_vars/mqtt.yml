@@ -1,0 +1,54 @@
+---
+freebsd_pkg_repo:
+  FreeBSD:
+    enabled: "false"
+    state: present
+  FreeBSD_latest:
+    enabled: "true"
+    state: present
+    url: pkg+https://pkg.FreeBSD.org/${ABI}/latest
+    signature_type: fingerprints
+    fingerprints: /usr/share/keys/pkg
+    mirror_type: srv
+apt_repo_enable_apt_transport_https: yes
+apt_repo_keys_to_add: []
+apt_repo_to_add:
+  - "ppa:mosquitto-dev/mosquitto-ppa"
+# ____________________ mosquitto
+mosquitto_bind_address: "{{ project_mosquitto_bind_address }}"
+mosquitto_config: |
+  user {{ mosquitto_user }}
+  pid_file {{ mosquitto_pid_file }}
+  log_dest syslog
+  autosave_interval 1800
+  persistence true
+  persistence_location {{ mosquitto_db_dir }}/
+  persistence_file mosquitto.db
+
+  # plain MQTT
+  listener {{ mosquitto_port }}
+  # listener {{ mosquitto_port }} {{ mosquitto_bind_address }}
+# ____________________ monit
+monit_config: |
+  set daemon 10
+    with start delay 10
+  set httpd port 2812
+    use address 127.0.0.1
+    allow 127.0.0.1
+  set logfile syslog facility log_daemon
+
+os_mosquitto_service:
+  FreeBSD:
+    start: /usr/sbin/service mosquitto start
+    stop: /usr/sbin/service mosquitto stop
+  Debian:
+    start: /usr/sbin/service mosquitto start
+    stop: /usr/sbin/service mosquitto stop
+
+monit_rc:
+  mosquitto:
+    state: present
+    content: |
+      check process mosquitto with pidfile /var/run/mosquitto.pid
+        start program "{{ os_mosquitto_service[ansible_os_family]['start'] }}"
+        stop program "{{ os_mosquitto_service[ansible_os_family]['stop'] }}"

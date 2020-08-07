@@ -1,0 +1,13 @@
+---
+
+- name: trombik.hostname
+- name: trombik.vim
+- name: trombik.apt_repo
+- name: trombik.zsh
+- name: trombik.freebsd_pkg_repo
+- name: trombik.tmux
+- name: trombik.hosts
+- name: trombik.git
+- name: trombik.sudo
+- name: trombik.mosquitto
+- name: trombik.monit
