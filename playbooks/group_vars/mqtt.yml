@@ -14,8 +14,35 @@ apt_repo_enable_apt_transport_https: yes
 apt_repo_keys_to_add: []
 apt_repo_to_add:
   - "ppa:mosquitto-dev/mosquitto-ppa"
+# ____________________ x509
+project_mqtt_ca_pub_file: "{{ mosquitto_conf_dir }}/certs/ca.pem"
+project_mqtt_tls_pub_file: "{{ mosquitto_conf_dir }}/certs/mosquitto.pub.pem"
+project_mqtt_tls_secret_file: "{{ mosquitto_conf_dir }}/certs/mosquitto.key.pem"
+
+x509_certificate:
+  - name: mqtt.i.trombik.org
+    state: present
+    public:
+      path: "{{ project_mqtt_tls_pub_file }}"
+      key: "{{ project_mqtt_tls_pub }}"
+      mode: "0644"
+    secret:
+      owner: "{{ mosquitto_user }}"
+      group: "{{ mosquitto_group }}"
+      path: "{{ project_mqtt_tls_secret_file }}"
+      key: "{{ project_mqtt_tls_secret }}"
+      mode: "0440"
+  - name: ca
+    state: present
+    public:
+      path: "{{ project_mqtt_ca_pub_file }}"
+      key: "{{ project_mqtt_ca_pub }}"
+
 # ____________________ mosquitto
+
+mosquitto_include_x509_certificate: yes
 mosquitto_bind_address: "{{ project_mosquitto_bind_address }}"
+mosquitto_port: 8883
 mosquitto_config: |
   user {{ mosquitto_user }}
   pid_file {{ mosquitto_pid_file }}
@@ -24,10 +51,14 @@ mosquitto_config: |
   persistence true
   persistence_location {{ mosquitto_db_dir }}/
   persistence_file mosquitto.db
+  per_listener_settings true
 
-  # plain MQTT
-  listener {{ mosquitto_port }}
-  # listener {{ mosquitto_port }} {{ mosquitto_bind_address }}
+  # MQTT/TLS
+  listener 8883
+  cafile {{ project_mqtt_ca_pub_file }}
+  keyfile {{ project_mqtt_tls_secret_file }}
+  certfile {{ project_mqtt_tls_pub_file }}
+  tls_version tlsv1.2
 # ____________________ monit
 monit_config: |
   set daemon 10
@@ -49,6 +80,6 @@ monit_rc:
   mosquitto:
     state: present
     content: |
-      check process mosquitto with pidfile /var/run/mosquitto.pid
+      check process mosquitto matching "mosquitto"
         start program "{{ os_mosquitto_service[ansible_os_family]['start'] }}"
         stop program "{{ os_mosquitto_service[ansible_os_family]['stop'] }}"
