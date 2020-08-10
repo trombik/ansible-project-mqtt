@@ -26,7 +26,11 @@ None
 | `mosquitto_extra_packages` | list of dict of extra packages to install (see below) | `[]` |
 | `mosquitto_wait_for_timeout` | how long to wait for the service to start, or timeout in second for `wait_for` in task and handler | `30` |
 | `mosquitto_include_x509_certificate` | If `true` value, include [`trombik.x509_certificate`](https://github.com/trombik/ansible-role-x509_certificate) `ansible` role during the play | `no` |
+| `mosquitto_extra_groups` | List of dict of groups into which user `mosquitto_user` is added. If the group does not exist, the role will create it. | `[]` |
 | `mosquitto_config` | string of `mosquitto.conf(5)` | `""` |
+| `mosquitto_acl_files`| list of ACL files (see below) | `[]` |
+| `mosquitto_accounts`| list of MQTT account (see below) | `[]` |
+| `mosquitto_accounts_file` | path to MQTT account database file |
 
 ## `mosquitto_extra_packages`
 
@@ -37,6 +41,27 @@ uninstall).
 |-----|-------------|------------|
 | `name` | package name | yes |
 | `state` | either `present` or `absent`. `present` if omitted | no |
+
+
+## `mosquitto_acl_files`
+
+This is a list of dict of ACL files to create or delete.
+
+| Key | Description | Mandatory? |
+|-----|-------------|------------|
+| `path` | path to ACL file | yes |
+| `state` | either `present` or `absent` | yes |
+| `content` | the content of the file | no |
+
+## `mosquitto_accounts`
+
+This is a list of MQTT accounts, pairs of user name and password. An element
+must be a dict with keys below.
+
+| Name | Description |
+|------|-------------|
+| `name` | Name of the MQTT account |
+| `password` | Password of the account |
 
 ## Debian
 
@@ -95,6 +120,8 @@ None
     ca_cert_file: "{% if ansible_distribution == 'Ubuntu' and ansible_distribution_version is version('18.04', '>=') %}/etc/ssl/certs/ca-certificates.crt{% elif ansible_os_family == 'RedHat' %}/etc/ssl/certs/ca-bundle.crt{% else %}/etc/ssl/cert.pem{% endif %}"
     mosquitto_include_x509_certificate: yes
     mosquitto_bind_address: "{{ ansible_default_ipv4.address }}"
+    mosquitto_extra_groups:
+      - name: cert
     mosquitto_config: |
       user {{ mosquitto_user }}
       pid_file {{ mosquitto_pid_file }}

@@ -11,6 +11,7 @@ db_dir  = "/var/lib/mosquitto"
 pid_file = "/var/run/mosquitto.pid"
 default_user = "root"
 default_group = "root"
+extra_group = "cert"
 
 case os[:family]
 when "freebsd"
@@ -19,19 +20,32 @@ when "freebsd"
   conf_dir = "/usr/local/etc/mosquitto"
   db_dir = "/var/db/mosquitto"
   default_group = "wheel"
+  ca_file = "/etc/ssl/cert.pem"
 when "ubuntu"
-  group = "nogroup"
+  group = "mosquitto"
 when "openbsd"
   user = "_mosquitto"
   group = "_mosquitto"
   db_dir = "/var/db/mosquitto"
+  ca_file = "/etc/ssl/cert.pem"
 end
 config  = "#{conf_dir}/mosquitto.conf"
 keyfile = "#{conf_dir}/certs/private/mosquitto.key"
 certfile = "#{conf_dir}/certs/public/mosquitto.pub"
+acl_file = "#{conf_dir}/my.acl"
+passwd_file = "#{conf_dir}/passwd"
+ca_file = "#{conf_dir}/certs/ca.pem"
 
 describe package(package) do
   it { should be_installed }
+end
+
+describe group extra_group do
+  it { should exist }
+end
+
+describe user user do
+  it { should belong_to_group extra_group }
 end
 
 case os[:family]
@@ -57,6 +71,24 @@ describe file keyfile do
   it { should be_owned_by user }
   it { should be_grouped_into group }
   its(:content) { should match(/^-----BEGIN RSA PRIVATE KEY-----$/) }
+end
+
+describe file(acl_file) do
+  it { should be_file }
+  it { should be_mode 640 }
+  it { should be_owned_by default_user }
+  it { should be_grouped_into group }
+  its(:content) { should match(/Managed by ansible/) }
+  its(:content) { should match(%r{^topic read \$SYS/#}) }
+end
+
+describe file passwd_file do
+  it { should be_file }
+  it { should be_mode 640 }
+  it { should be_owned_by default_user }
+  it { should be_grouped_into group }
+  its(:content) { should match(/Managed by ansible/) }
+  its(:content) { should match(/^foo:\$\d+\$.*==$/) }
 end
 
 describe file(config) do
@@ -106,14 +138,45 @@ ports.each do |p|
   end
 end
 
-describe command "echo | openssl s_client -connect 10.0.2.15:8883 -tls1" do
-  its(:stdout) { should match(%r{subject=/C=AU/ST=Some-State/O=Internet Widgits Pty Ltd/CN=foo.example.org}) }
+describe command "echo | openssl s_client -connect 10.0.2.15:8883 -tls1_2" do
+  case os[:family]
+  when "openbsd", "redhat"
+    its(:stdout) { should match(Regexp.escape("subject=/C=AU/ST=Some-State/O=Internet Widgits Pty Ltd/CN=mqtt")) }
+  else
+    its(:stdout) { should match(/subject=C = AU, ST = Some-State, O = Internet Widgits Pty Ltd, CN = mqtt/) }
+  end
 end
 
-describe command "echo | openssl s_client -connect 10.0.2.15:1883 -tls1" do
-  if ((os[:family] == "ubuntu" && os[:release].to_f == 18.04)) || os[:family] == "redhat"
+describe command "echo | openssl s_client -connect 10.0.2.15:1883 -tls1_2" do
+  case os[:family]
+  when "ubuntu", "redhat"
     its(:stderr) { should match(/write:errno=104/) }
+  when "openbsd"
+    its(:stderr) { should match(/read:errno=0/) }
   else
-    its(:stderr) { should match(/ssl handshake failure/) }
+    its(:stderr) { should match(/write:errno=0/) }
+  end
+  its(:stdout) { should match(/#{Regexp.escape("New, (NONE), Cipher is (NONE)")}/) }
+end
+
+describe file "#{conf_dir}/passwd" do
+  it { should be_file }
+  it { should be_mode 640 }
+  it { should be_owned_by default_user }
+  it { should be_grouped_into group }
+  %w[foo bar admin].each do |u|
+    its(:content) { should match(/^#{Regexp.escape(u)}:\$\d+\$.*/) }
+  end
+end
+# XXX as mosquitto does not return errors to MQTT clients when ACLs deny the
+# access, you cannot test failed attempt to read. in that case, mosquitto_sub
+# dos not return.
+#
+# authenticated users can read `$SYS/#`
+%w[foo bar admin].each do |u|
+  describe command "mosquitto_sub -h 10.0.2.15 -p 8883 -u #{Shellwords.escape(u)} -P password -t #{Shellwords.escape('$SYS/broker/clients/connected')} -C 1 --cafile #{Shellwords.escape(ca_file)} --insecure -d" do
+    its(:exit_status) { should eq 0 }
+    its(:stderr) { should eq "" }
+    its(:stdout) { should match(/^\d+$/) }
   end
 end
