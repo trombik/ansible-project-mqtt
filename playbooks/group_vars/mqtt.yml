@@ -52,6 +52,8 @@ mosquitto_config: |
   persistence_location {{ mosquitto_db_dir }}/
   persistence_file mosquitto.db
   per_listener_settings true
+  allow_anonymous true
+  acl_file {{ mosquitto_conf_dir }}/mqtt.acl
 
   # MQTT/TLS
   listener 8883
@@ -59,6 +61,31 @@ mosquitto_config: |
   keyfile {{ project_mqtt_tls_secret_file }}
   certfile {{ project_mqtt_tls_pub_file }}
   tls_version tlsv1.2
+
+mosquitto_acl_files:
+  - name: my acl
+    path: "{{ mosquitto_conf_dir }}/mqtt.acl"
+    state: present
+    content: |
+      # allow anonymous users to read statistics
+      topic read $SYS/#
+      # %topic%: one of five topics as defined by commands Topic, GroupTopic, ButtonTopic, SwitchTopic and MqttClient
+      # %prefix%: cmnd, stat, and tele
+      # %hostname%: the hostname of the device as defined through the web UI (default = %s-%04d)
+      #
+      # tasmota/%hostname%/%topic%/%prefix%/
+      #
+      # allow tasmota user to readwrite to a tree under MQTT client ID
+      user tasmota
+      pattern readwrite tasmota/%c/#
+      # allow readonly user to read everything.
+      user readonly
+      topic read #
+      # allow admin to everything
+      user admin
+      topic readwrite #
+mosquitto_accounts: "{{ project_mosquitto_accounts }}"
+
 # ____________________ monit
 monit_config: |
   set daemon 10
