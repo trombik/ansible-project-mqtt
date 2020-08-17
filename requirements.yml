@@ -10,5 +10,7 @@
 - name: trombik.git
 - name: trombik.sudo
 - name: trombik.mosquitto
+  src: https://github.com/trombik/ansible-role-mosquitto.git
+  version: release_1.3.2
 - name: trombik.monit
 - name: trombik.x509_certificate
