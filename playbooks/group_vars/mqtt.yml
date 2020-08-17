@@ -78,6 +78,8 @@ mosquitto_acl_files:
       # allow tasmota user to readwrite to a tree under MQTT client ID
       user tasmota
       pattern readwrite tasmota/%c/#
+      user homie
+      pattern readwrite homie/#
       # allow readonly user to read everything.
       user readonly
       topic read #
