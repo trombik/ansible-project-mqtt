@@ -8,6 +8,7 @@ require "vagrant/serverspec"
 require "vagrant/ssh/config"
 $LOAD_PATH.unshift(Pathname.new(File.dirname(__FILE__)).parent + "ruby" + "lib")
 require "ansible_inventory"
+require "ansible/vault"
 
 ENV["LANG"] = "C"
 
@@ -45,4 +46,11 @@ def inventory_path
   Pathname.new(__FILE__)
           .parent
           .parent + "inventories" + test_environment
+end
+
+def credentials_yaml
+  file = Pathname.new("playbooks") + "group_vars" + "#{test_environment}-credentials.yml"
+  YAML.safe_load(Ansible::Vault.decrypt(file: file))
+rescue RuntimeError
+  YAML.load_file(file)
 end
