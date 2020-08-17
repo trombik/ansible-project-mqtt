@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-
 require_relative "../spec_helper"
 
 passwd_file = case os[:family]
@@ -16,11 +15,15 @@ mosquitto_group = case os[:family]
                   when "openbsd"
                     "_mosquitto"
                   end
+accounts = credentials_yaml["project_mosquitto_accounts"]
+
 describe file passwd_file do
   it { should exist }
   it { should be_file }
   it { should be_mode 640 }
   it { should be_owned_by "root" }
   it { should be_grouped_into mosquitto_group }
-  its(:content) { should match(/^admin:\$\d+\$.*/) }
+  accounts.each do |account|
+    its(:content) { should match(/^#{account["name"]}:\$\d+\$.*/) }
+  end
 end
