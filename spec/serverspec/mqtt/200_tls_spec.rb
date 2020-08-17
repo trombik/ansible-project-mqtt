@@ -9,7 +9,7 @@ flags = case test_environment
         when "virtualbox"
           "--insecure"
         else
-          ""
+          "--insecure"
         end
 
 ports.each do |p|
@@ -25,7 +25,7 @@ end
 
 describe "mosquitto_sub" do
   it "returns #{topic}", retry: 3, retry_wait: 10 do
-    command = command("mosquitto_sub -C 1 -t #{Shellwords.escape(topic)} --cafile #{Shellwords.escape(ca_cert_file)} #{Shellwords.escape(flags)}")
+    command = command("mosquitto_sub -C 1 -t #{Shellwords.escape(topic)} --cafile #{Shellwords.escape(ca_cert_file)} #{Shellwords.escape(flags) if flags.length > 0}")
 
     expect(command.exit_status).to eq 0
     expect(command.stderr).to eq ""
