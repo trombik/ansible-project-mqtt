@@ -17,7 +17,6 @@ def get_message(mqtt_client, topic)
   begin
     Timeout.timeout(10) do
       mqtt_client.get do |t, m|
-        puts "#{t}:#{m}"
         result = m if t == topic
       end
     end
