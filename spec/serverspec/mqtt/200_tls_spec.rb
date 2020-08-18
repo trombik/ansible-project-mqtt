@@ -5,12 +5,7 @@ require_relative "../spec_helper"
 topic = "$SYS/broker/clients/connected"
 ports = [8883]
 ca_cert_file = "/etc/mosquitto/certs/ca.pem"
-flags = case test_environment
-        when "virtualbox"
-          "--insecure"
-        else
-          "--insecure"
-        end
+flags = "--insecure"
 
 ports.each do |p|
   describe port p do
@@ -25,7 +20,7 @@ end
 
 describe "mosquitto_sub" do
   it "returns #{topic}", retry: 3, retry_wait: 10 do
-    command = command("mosquitto_sub -C 1 -t #{Shellwords.escape(topic)} --cafile #{Shellwords.escape(ca_cert_file)} #{Shellwords.escape(flags) if flags.length > 0}")
+    command = command("mosquitto_sub -C 1 -t #{Shellwords.escape(topic)} --cafile #{Shellwords.escape(ca_cert_file)} #{Shellwords.escape(flags) unless flags.empty?}")
 
     expect(command.exit_status).to eq 0
     expect(command.stderr).to eq ""
