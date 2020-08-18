@@ -12,6 +12,7 @@ gem "vagrant-ssh-config", git: "https://github.com/trombik/vagrant-ssh-config.gi
 group :development, :test do
   gem "capybara"
   gem "irb"
+  gem "mqtt"
   gem "pry"
   gem "retries", "~> 0.0.5"
   gem "rspec", "~> 3.4.0"

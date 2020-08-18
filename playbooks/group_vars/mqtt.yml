@@ -51,9 +51,11 @@ mosquitto_config: |
   persistence true
   persistence_location {{ mosquitto_db_dir }}/
   persistence_file mosquitto.db
-  per_listener_settings true
+  per_listener_settings false
   allow_anonymous true
   acl_file {{ mosquitto_conf_dir }}/mqtt.acl
+  password_file {{ mosquitto_accounts_file }}
+  sys_interval 2
 
   # MQTT/TLS
   listener 8883
@@ -68,24 +70,24 @@ mosquitto_acl_files:
     state: present
     content: |
       # allow anonymous users to read statistics
-      topic read $SYS/#
+      topic read $SYS/broker/load/#
+      topic read $SYS/broker/bytes/#
+      topic read $SYS/broker/clients/#
       # %topic%: one of five topics as defined by commands Topic, GroupTopic, ButtonTopic, SwitchTopic and MqttClient
       # %prefix%: cmnd, stat, and tele
       # %hostname%: the hostname of the device as defined through the web UI (default = %s-%04d)
       #
       # tasmota/%hostname%/%topic%/%prefix%/
       #
-      # allow tasmota user to readwrite to a tree under MQTT client ID
-      user tasmota
+      # XXX pattern applies to ALL users
       pattern readwrite tasmota/%c/#
-      user homie
-      pattern readwrite homie/#
-      # allow readonly user to read everything.
-      user readonly
-      topic read #
+      pattern readwrite homie/%c/#
       # allow admin to everything
       user admin
-      topic readwrite #
+      # XXX you cannot use '#' here. don't ask me why
+      topic readwrite $SYS/#
+      topic readwrite tasmota/#
+      topic readwrite homie/#
 mosquitto_accounts: "{{ project_mosquitto_accounts }}"
 
 # ____________________ monit
