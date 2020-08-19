@@ -38,6 +38,7 @@ before_install:
   - sudo add-apt-repository -y "deb [arch=amd64] https://download.virtualbox.org/virtualbox/debian `lsb_release -cs` contrib"
   - sudo apt-get update
   - sudo apt-get install virtualbox-6.1
+  - echo XXXXXXXXXXXXXXXX > ${HOME}/.project.vault
 
 install:
   - npm install
