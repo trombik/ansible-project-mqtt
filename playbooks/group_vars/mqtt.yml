@@ -57,6 +57,9 @@ mosquitto_config: |
   password_file {{ mosquitto_accounts_file }}
   sys_interval 2
 
+  # MQTT
+  listener 1883
+
   # MQTT/TLS
   listener 8883
   cafile {{ project_mqtt_ca_pub_file }}

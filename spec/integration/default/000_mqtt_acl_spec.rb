@@ -28,27 +28,54 @@ end
 
 mqtt_hosts.each do |mqtt_host|
   describe mqtt_host do
-    let(:mqtt_client) do
-      MQTT::Client.new(
-        host: inventory.host(mqtt_host)["ansible_host"],
-        port: 8883,
-        ssl: true,
-        ca_file: ca_pem
-      )
-    end
-
-    before(:example) { mqtt_client.connect }
-    after(:example) { mqtt_client.disconnect }
-
-    context "when the user is anonymous" do
-      it "allows the user to subscribe $SYS/# and read $SYS/broker/bytes/sent" do
-        expect { mqtt_client.subscribe("$SYS/#") }.not_to raise_error
-        expect(get_message(mqtt_client, "$SYS/broker/bytes/sent")).to match(/^\d+$/)
+    context "when port is MQTT/SSL" do
+      let(:mqtt_client) do
+        MQTT::Client.new(
+          host: inventory.host(mqtt_host)["ansible_host"],
+          port: 8883,
+          ssl: true,
+          ca_file: ca_pem
+        )
       end
 
-      it "does not allow to read $SYS/broker/uptime" do
-        expect { mqtt_client.subscribe("$SYS/#") }.not_to raise_error
-        expect(get_message(mqtt_client, "$SYS/broker/uptime")).not_to match(/^\d+ \S+$/)
+      before(:example) { mqtt_client.connect }
+      after(:example) { mqtt_client.disconnect }
+
+      context "when the user is anonymous" do
+        it "allows the user to subscribe $SYS/# and read $SYS/broker/bytes/sent" do
+          expect { mqtt_client.subscribe("$SYS/#") }.not_to raise_error
+          expect(get_message(mqtt_client, "$SYS/broker/bytes/sent")).to match(/^\d+$/)
+        end
+
+        it "does not allow to read $SYS/broker/uptime" do
+          expect { mqtt_client.subscribe("$SYS/#") }.not_to raise_error
+          expect(get_message(mqtt_client, "$SYS/broker/uptime")).not_to match(/^\d+ \S+$/)
+        end
+      end
+    end
+
+    context "when port is MQTT" do
+      let(:mqtt_client) do
+        MQTT::Client.new(
+          host: inventory.host(mqtt_host)["ansible_host"],
+          port: 1883,
+          ssl: false
+        )
+      end
+
+      before(:example) { mqtt_client.connect }
+      after(:example) { mqtt_client.disconnect }
+
+      context "when the user is anonymous" do
+        it "allows the user to subscribe $SYS/# and read $SYS/broker/bytes/sent" do
+          expect { mqtt_client.subscribe("$SYS/#") }.not_to raise_error
+          expect(get_message(mqtt_client, "$SYS/broker/bytes/sent")).to match(/^\d+$/)
+        end
+
+        it "does not allow to read $SYS/broker/uptime" do
+          expect { mqtt_client.subscribe("$SYS/#") }.not_to raise_error
+          expect(get_message(mqtt_client, "$SYS/broker/uptime")).not_to match(/^\d+ \S+$/)
+        end
       end
     end
   end
