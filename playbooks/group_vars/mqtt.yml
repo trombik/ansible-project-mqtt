@@ -91,6 +91,10 @@ mosquitto_acl_files:
       topic readwrite $SYS/#
       topic readwrite tasmota/#
       topic readwrite homie/#
+
+      user readonly
+      topic read homie/#
+      topic read tasmota/#
 mosquitto_accounts: "{{ project_mosquitto_accounts }}"
 
 # ____________________ monit
